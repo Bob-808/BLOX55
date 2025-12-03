@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BLOX</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .description {
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #333;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-template-rows: repeat(5, 60px);
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      border: 1px solid #333;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s, transform 0.3s, opacity 0.3s;
+    }
+    .selected {
+      background-color: lightblue;
+    }
+    .swap {
+      transform: scale(1.2);
+      opacity: 0.5;
+    }
+    .correct {
+      background-color: lightgreen;
+      pointer-events: none; /* lock correct cells */
+    }
+    #playAgain {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+	    #hint {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+	    #surrender {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+	#scoreboard {
+  font-size: 18px;
+  margin: 10px auto;
+  color: #444;
+}
+
+  </style>
+</head>
+<body>
+  <!-- Title -->
+  <h1>BLOX</h1>
+
+  <!-- Description -->
+  <div class="description">
+    <p><strong>How to Play:</strong></p>
+    <p>
+      You are presented with a 5×5 grid of letters.  
+      Tap or click one letter, then another, to swap them.  
+      The goal is to arrange the letters so that they form five valid English words across and five down.  
+      Correctly placed letters will glow green and lock in place.  
+      Continue swapping until the puzzle is solved!
+    </p>
+  </div>
+
+  <!-- Game Grid -->
+  <div class="grid" id="grid"></div>
+
+  <!-- Play Again Button -->
+  <button id="playAgain">Play Again</button>
+  
+  <button id="surrender">Surrender</button>
+
+	<button id="hint">Hint</button>
+
+  
+  <div id="scoreboard">
+  <span id="timer">Time: 0s</span> | 
+  <span id="moves">Moves: 0</span>
+</div>
+
+
+  <script>
+    const grid = document.getElementById("grid");
+    let puzzles = [];
+    let currentSolution = [];
+    let selected = null;
+	let moves = 0;
+	let timerInterval = null;
+	let startTime = null;
+	let timerStarted = false;
+	let hintsUser = 0;
+
+    // Load puzzles from text file
+    async function loadPuzzles() {
+      const response = await fetch('5 LETTER WORDS GRID.txt');
+      const text = await response.text();
+      const lines = text.trim().split('\n').filter(line => line.length > 0);
+      return lines.map(line => line.split(/\s+/)); // array of arrays of 5 words
+    }
+
+    // Shuffle helper
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    // Start a new puzzle
+function startNewPuzzle() {
+  const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+  currentSolution = puzzle;
+	timerStarted = false;
+	stopTimer();
+  grid.innerHTML = "";
+  selected = null;
+
+  const letters = puzzle.join("").split("");
+  shuffle(letters);
+
+  letters.forEach((letter, index) => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.textContent = letter;
+    cell.dataset.index = index;
+
+    cell.addEventListener("click", () => handleCellClick(cell));
+    grid.appendChild(cell);
+  });
+
+  resetScoreboard();
+  //startTimer();
+}
+
+	
+// Start timer
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById("timer").textContent = "Time: " + elapsed + "s";
+  }, 1000);
+}
+
+// Stop timer
+	function stopTimer() {
+	  clearInterval(timerInterval);
+	  timerInterval = null;
+	}
+
+// Reset scoreboard
+	function resetScoreboard() {
+	  moves = 0;
+	  document.getElementById("moves").textContent = "Moves: 0";
+	  document.getElementById("timer").textContent = "Time: 0s";
+	}
+	
+    // Handle cell clicks
+    function handleCellClick(cell) {
+		if (!timerStarted) {
+			startTimer();
+			timerStarted = true;
+			hintsUsed = 0;
+		}
+
+      if (selected === null) {
+        selected = cell;
+        cell.classList.add("selected");
+      } else {
+        if (selected === cell) {
+          selected.classList.remove("selected");
+          selected = null;
+          return;
+        }
+
+        selected.classList.add("swap");
+        cell.classList.add("swap");
+
+setTimeout(() => {
+  const temp = selected.textContent;
+  selected.textContent = cell.textContent;
+  cell.textContent = temp;
+
+  selected.classList.remove("selected", "swap");
+  cell.classList.remove("swap");
+
+  selected = null;
+
+  moves++;
+  document.getElementById("moves").textContent = "Moves: " + moves;
+
+  checkProgress();
+}, 300);
+
+      }
+    }
+
+    // Check progress and highlight correct letters
+    function checkProgress() {
+      const current = Array.from(grid.children).map(c => c.textContent);
+      const solutionString = currentSolution.join("");
+
+      let allCorrect = true;
+
+      current.forEach((letter, i) => {
+        const cell = grid.children[i];
+        if (letter === solutionString[i]) {
+          cell.classList.add("correct");
+        } else {
+          cell.classList.remove("correct");
+          allCorrect = false;
+        }
+      });
+
+if (allCorrect) {
+  stopTimer();
+  alert("Puzzle solved!\n" +
+        document.getElementById("timer").textContent + " | " +
+        document.getElementById("moves").textContent);
+}
+
+    }
+
+    // Play Again button
+    document.getElementById("playAgain").addEventListener("click", startNewPuzzle);
+	
+// surrender Button
+document.getElementById("surrender").addEventListener("click", () => {
+  const solutionString = currentSolution.join("");
+  Array.from(grid.children).forEach((cell, i) => {
+    cell.textContent = solutionString[i];
+    cell.classList.add("correct");
+  });
+  stopTimer();
+  alert("Puzzle surrendered!");
+});
+
+	// hint Button
+	document.getElementById("hint").addEventListener("click", () => {
+  if (hintsUsed >= 3) {
+    alert("No more hints allowed!");
+    return;
+  }
+  const solutionString = currentSolution.join("");
+  const wrongCells = Array.from(grid.children).filter((cell, i) => cell.textContent !== solutionString[i]);
+  if (wrongCells.length > 0) {
+    const randomCell = wrongCells[Math.floor(Math.random() * wrongCells.length)];
+    const index = Array.from(grid.children).indexOf(randomCell);
+    randomCell.textContent = solutionString[index];
+    randomCell.classList.add("correct");
+    randomCell.style.pointerEvents = "none";
+    hintsUsed++;
+    checkProgress();
+  }
+});
+
+
+    // Initialize game
+    (async () => {
+      puzzles = await loadPuzzles();
+      startNewPuzzle();
+    })();
+  </script>
+</body>
+</html>
