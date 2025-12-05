@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>BLOX</title>
+  <title>BLOX 5x5</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,17 +72,61 @@
       font-size: 16px;
       cursor: pointer;
     }
+#hint {
+  transition: background-color 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+}
+
+#hint:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+#hint.enabled {
+  background-color: #4CAF50; /* green or your preferred active color */
+  color: white;
+  opacity: 1;
+}
+
 	#scoreboard {
   font-size: 18px;
   margin: 10px auto;
   color: #444;
+}
+@keyframes hintFlash {
+  0%, 100% { background-color: transparent; color: inherit; }
+  25% { background-color: yellow; color: black; }
+  50% { background-color: transparent; color: inherit; }
+  75% { background-color: yellow; color: black; }
+}
+
+.hint-flash {
+  animation: hintFlash 1.5s ease-in-out 1; /* 3 flashes in 1.5s */
+}
+
+#hint {
+  transition: background-color 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+}
+
+#hint:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+#hint.enabled {
+  background-color: #F0F8FF; /* alice blue or your preferred active color */
+  color: black;
+  opacity: 1;
 }
 
   </style>
 </head>
 <body>
   <!-- Title -->
-  <h1>BLOX</h1>
+  <h1>BLOX 5x5</h1>
 
   <!-- Description -->
   <div class="description">
@@ -106,11 +150,12 @@
 
 	<button id="hint">Hint</button>
 
-  
-  <div id="scoreboard">
+<div id="scoreboard">
   <span id="timer">Time: 0s</span> | 
-  <span id="moves">Moves: 0</span>
+  <span id="moves">Moves: 0</span><br>
+  <span id="penalty">Hint Penalty: 0s</span> 
 </div>
+
 
 
   <script>
@@ -123,14 +168,24 @@
 	let startTime = null;
 	let timerStarted = false;
 	let hintsUser = 0;
+	let firstMoveMade = false;
 
     // Load puzzles from text file
-    async function loadPuzzles() {
+    async function xloadPuzzles() {
       const response = await fetch('5 LETTER WORDS GRID.txt');
       const text = await response.text();
       const lines = text.trim().split('\n').filter(line => line.length > 0);
       return lines.map(line => line.split(/\s+/)); // array of arrays of 5 words
     }
+	async function loadPuzzles() {
+	  return [
+		["COMET","ABASE","NESTS","ASSET","LEERS"],
+		["EAGLE","BELOW","BRINE","EIDER","DEERS"],
+		["HEATS","ALLOT","VIOLA","OTHER","CEASE"],
+		["IDEAS","DUNCE","ORATE","LATER","SLEDS"],
+		["TORTS","AVAIL","NINNY","KNEEL","SEEDY"]
+	  ];
+	}
 
     // Shuffle helper
     function shuffle(array) {
@@ -163,7 +218,32 @@ function startNewPuzzle() {
   });
 
   resetScoreboard();
-  //startTimer();
+// Reset scoreboard
+
+
+
+
+  moves = 0;
+  penaltyTime = 0;
+  hintsUsed = 0;
+  firstMoveMade = false;
+
+  document.getElementById("moves").textContent = "Moves: 0";
+  document.getElementById("timer").textContent = "Time: 0s";
+  document.getElementById("penalty").textContent = "Penalty: 0s";
+
+  const hintBtn = document.getElementById("hint");
+  hintBtn.textContent = "Hint (" + maxHints + " left)";
+  hintBtn.disabled = true;
+  hintBtn.classList.remove("enabled"); // remove active style
+
+
+
+
+
+// don't start the timer right away, wait until the first move is made
+ // startTimer();  
+
 }
 
 	
@@ -171,10 +251,12 @@ function startNewPuzzle() {
 function startTimer() {
   startTime = Date.now();
   timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const elapsed = Math.floor((Date.now() - startTime) / 1000) + penaltyTime;
     document.getElementById("timer").textContent = "Time: " + elapsed + "s";
   }, 1000);
 }
+
+
 
 // Stop timer
 	function stopTimer() {
@@ -220,6 +302,18 @@ setTimeout(() => {
 
   selected = null;
 
+	
+	
+	
+	firstMoveMade = true;
+const hintBtn = document.getElementById("hint");
+hintBtn.disabled = false;
+hintBtn.classList.add("enabled"); // triggers fade-in style
+
+	
+	
+	
+
   moves++;
   document.getElementById("moves").textContent = "Moves: " + moves;
 
@@ -230,33 +324,36 @@ setTimeout(() => {
     }
 
     // Check progress and highlight correct letters
-    function checkProgress() {
-      const current = Array.from(grid.children).map(c => c.textContent);
-      const solutionString = currentSolution.join("");
+function checkProgress() {
+  const current = Array.from(grid.children).map(c => c.textContent);
+  const solutionString = currentSolution.join("");
 
-      let allCorrect = true;
+  let allCorrect = true;
 
-      current.forEach((letter, i) => {
-        const cell = grid.children[i];
-        if (letter === solutionString[i]) {
-          cell.classList.add("correct");
-        } else {
-          cell.classList.remove("correct");
-          allCorrect = false;
-        }
-      });
-
-if (allCorrect) {
-  stopTimer();
-  alert("Puzzle solved!\n" +
-        document.getElementById("timer").textContent + " | " +
-        document.getElementById("moves").textContent);
-}
-
+  // Step 1: Compare each cell with the solution
+  current.forEach((letter, i) => {
+    const cell = grid.children[i];
+    if (letter === solutionString[i]) {
+      cell.classList.add("correct");
+    } else {
+      cell.classList.remove("correct");
+      allCorrect = false;
     }
+  });
+
+  // Step 2: If solved, stop timer and alert
+  if (allCorrect) {
+    stopTimer();
+    alert("Puzzle solved!\n" +
+          document.getElementById("timer").textContent + " | " +
+          document.getElementById("moves").textContent);
+  }
+}
 
     // Play Again button
     document.getElementById("playAgain").addEventListener("click", startNewPuzzle);
+	// Hint button
+    document.getElementById("hint").addEventListener("click", useHint);
 	
 // surrender Button
 document.getElementById("surrender").addEventListener("click", () => {
@@ -266,28 +363,61 @@ document.getElementById("surrender").addEventListener("click", () => {
     cell.classList.add("correct");
   });
   stopTimer();
-  alert("Puzzle surrendered!");
+  //alert("Puzzle surrendered!");
 });
 
 	// hint Button
-	document.getElementById("hint").addEventListener("click", () => {
-  if (hintsUsed >= 3) {
-    alert("No more hints allowed!");
+let hintsUsed = 0;
+const maxHints = 3;
+let penaltyTime = 0; // extra seconds added to timer
+
+function useHint() {
+  if (!firstMoveMade) {
+    alert("You must make at least one move before using a hint!");
     return;
   }
+
+
+
+  if (hintsUsed >= maxHints) {
+	return; // already disabled, just ignore
+  }
+
   const solutionString = currentSolution.join("");
   const wrongCells = Array.from(grid.children).filter((cell, i) => cell.textContent !== solutionString[i]);
-  if (wrongCells.length > 0) {
-    const randomCell = wrongCells[Math.floor(Math.random() * wrongCells.length)];
-    const index = Array.from(grid.children).indexOf(randomCell);
-    randomCell.textContent = solutionString[index];
-    randomCell.classList.add("correct");
-    randomCell.style.pointerEvents = "none";
-    hintsUsed++;
-    checkProgress();
+  if (wrongCells.length === 0) {
+    alert("Puzzle already solved!");
+    return;
   }
-});
 
+  const randomCell = wrongCells[Math.floor(Math.random() * wrongCells.length)];
+  const index = Array.from(grid.children).indexOf(randomCell);
+  const correctLetter = solutionString[index];
+  const originalLetter = randomCell.textContent;
+
+  // Flash correct letter with CSS animation
+  randomCell.textContent = correctLetter;
+  randomCell.classList.add("hint-flash");
+  randomCell.addEventListener("animationend", () => {
+    randomCell.textContent = originalLetter;
+    randomCell.classList.remove("hint-flash");
+  }, { once: true });
+
+  // Apply penalties
+  hintsUsed++;
+  penaltyTime += 5;
+  moves += 2;
+
+  // Update scoreboard
+  document.getElementById("moves").textContent = "Moves: " + moves;
+  document.getElementById("penalty").textContent = "Penalty: " + penaltyTime + "s";
+  document.getElementById("hint").textContent = "Hint (" + (maxHints - hintsUsed) + " left)";
+  
+    // Disable immediately if limit reached
+  if (hintsUsed >= maxHints) {
+    document.getElementById("hint").disabled = true; }
+
+}
 
     // Initialize game
     (async () => {
