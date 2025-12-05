@@ -177,7 +177,7 @@
       const lines = text.trim().split('\n').filter(line => line.length > 0);
       return lines.map(line => line.split(/\s+/)); // array of arrays of 5 words
     }
-	async function loadPuzzles() {
+	async function xxloadPuzzles() {
 	  return [
 		["COMET","ABASE","NESTS","ASSET","LEERS"],
 		["EAGLE","BELOW","BRINE","EIDER","DEERS"],
@@ -186,6 +186,29 @@
 		["TORTS","AVAIL","NINNY","KNEEL","SEEDY"]
 	  ];
 	}
+
+
+async function loadPuzzles() {
+  const response = await fetch('5 LETTER WORDS GRID.txt');
+  if (!response.ok) {
+    throw new Error("Failed to load puzzle file: " + response.status);
+  }
+  const text = await response.text();
+
+  // Normalize line endings and trim
+  const lines = text.trim().split(/\r?\n/).filter(line => line.length > 0);
+
+  // Debug: log raw lines
+  console.log("Raw lines from file:", lines);
+
+  // Split each line into words
+  const puzzles = lines.map(line => line.trim().split(/\s+/).slice(0, 5));
+
+  // Debug: log parsed puzzles
+  console.log("Parsed puzzles:", puzzles);
+
+  return puzzles;
+}
 
     // Shuffle helper
     function shuffle(array) {
