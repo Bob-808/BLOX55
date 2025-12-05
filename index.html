@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>BLOX 5x5</title>
+  <title>BLOX 5x5 test</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -126,7 +126,7 @@
 </head>
 <body>
   <!-- Title -->
-  <h1>BLOX 5x5</h1>
+  <h1>BLOX 5x5 test</h1>
 
   <!-- Description -->
   <div class="description">
@@ -171,13 +171,13 @@
 	let firstMoveMade = false;
 
     // Load puzzles from text file
-    async function loadPuzzles() {
+    async function xloadPuzzles() {
       const response = await fetch('5 LETTER WORDS GRID.txt');
       const text = await response.text();
       const lines = text.trim().split('\n').filter(line => line.length > 0);
       return lines.map(line => line.split(/\s+/)); // array of arrays of 5 words
     }
-	async function 4testingloadPuzzles() {
+	async function loadPuzzles() {
 	  return [
 		["COMET","ABASE","NESTS","ASSET","LEERS"],
 		["EAGLE","BELOW","BRINE","EIDER","DEERS"],
