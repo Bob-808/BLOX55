@@ -171,13 +171,13 @@
 	let firstMoveMade = false;
 
     // Load puzzles from text file
-    async function xloadPuzzles() {
+    async function loadPuzzles() {
       const response = await fetch('5 LETTER WORDS GRID.txt');
       const text = await response.text();
       const lines = text.trim().split('\n').filter(line => line.length > 0);
       return lines.map(line => line.split(/\s+/)); // array of arrays of 5 words
     }
-	async function loadPuzzles() {
+	async function 4testingloadPuzzles() {
 	  return [
 		["COMET","ABASE","NESTS","ASSET","LEERS"],
 		["EAGLE","BELOW","BRINE","EIDER","DEERS"],
